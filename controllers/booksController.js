@@ -1,14 +1,6 @@
 import CustomError from "../classes/CustomError.js";
 import connection from "../connection.js";
 
-// function index(req, res) {
-//   const response = {
-//     totalCount: books.length,
-//     data: [...books],
-//   };
-//   res.json(response);
-// }
-
 function index(req, res) {
   const sql = `SELECT * FROM pizzas`;
 
@@ -20,19 +12,17 @@ function index(req, res) {
   })
 }
 
-// function show(req, res) {
-//   const id = parseInt(req.params.id);
-//   const item = books.find((item) => item.id === id);
-//   if (!item) {
-//     throw new CustomError("L'elemento non esiste", 404);
-//   }
-//   res.json({ success: true, item });
-// }
-
 function show(req, res) {
   const id = req.params.id
 
-  const sql = 'SELECT * FROM pizzas WHERE id = ?';
+  const sql = 
+  `SELECT pizzas.id, pizzas.name AS pizza_name, ingredients.name AS ingredient_name
+  FROM pizzas
+  JOIN ingredient_pizza
+    ON pizzas.id = ingredient_pizza.pizza_id
+  JOIN ingredients
+    ON ingredient_pizza.ingredient_id = ingredients.id
+  WHERE pizzas.id = ?`;
 
   connection.query(sql, [id], (err, results) => {
     if (err) return res.status(500).json({
@@ -41,7 +31,12 @@ function show(req, res) {
     if (results.length === 0) return res.status(404).json({
       error: 'Pizza not found'
     });
-    res.json(results[0]);
+    const response= {
+      id: results[0].id,
+      pizza_name: results[0].pizza_name,
+      ingredients: results.map(ele => ele.ingredient_name),
+    };
+    res.json(response);
   });
 }
 
@@ -82,22 +77,10 @@ function update(req, res) {
   res.json(item);
 }
 
-
-// function destroy(req, res) {
-//   const id = parseInt(req.params.id);
-//   const index = books.findIndex((item) => item.id === id);
-//   if (index !== -1) {
-//     books.splice(index, 1);
-//     res.sendStatus(204);
-//   } else {
-//     throw new CustomError("L'elemento non esiste", 404);
-//   }
-// }
-
 function destroy(req, res) {
-  // recuperiamo l'id dall' URL
+
   const { id } = req.params;
-  //Eliminiamo la pizza dal menu
+  
   connection.query('DELETE FROM pizzas WHERE id = ?', [id], (err) => {
     if (err) return res.status(500).json({
       error: 'Failed to delete pizza'
